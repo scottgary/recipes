@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Description</key>
+    <string>Get pre-packaged AnyConnect client.</string>
+    <key>Identifier</key>
+    <string>com.example.pkg.AnyConnect</string>
+    <key>Input</key>
+    <dict>
+        <key>NAME</key>
+        <string>AnyConnect Client</string>
+        <!-- manually putting these in because we can't get them from the prepackaged AnyConnect pkg -->
+        <key>VERSION</key>
+        <string>1.0.0</string>
+        <key>BUNDLEID</key>
+        <string>com.example.pkg.AnyConnect</string>
+    </dict>
+    <key>ParentRecipe</key>
+    <string>com.example.download.AnyConnect</string>
+    <key>MinimumVersion</key>
+    <string>0.4.2</string>
+    <key>Process</key>
+    <array>
+        <dict>
+            <key>Processor</key>
+            <string>PkgRootCreator</string>
+            <key>Arguments</key>
+            <dict>
+                <key>pkgroot</key>
+                <string>%RECIPE_CACHE_DIR%/pkgroot</string>
+                <key>pkgdirs</key>
+                <dict>
+                    <key>Scripts</key>
+                    <string>0755</string>
+                    <key>Scripts/AnotherFolder</key>
+                    <string>0755</string>
+                </dict>
+            </dict>
+        </dict>
+        <dict>
+            <key>Processor</key>
+            <string>Copier</string>
+            <key>Arguments</key>
+            <dict>
+                <key>source_path</key>
+                <string>%RECIPE_CACHE_DIR%/somefolder/somefile.xml</string>
+                <key>destination_path</key>
+                <string>%pkgroot%/Scripts/somefile.xml</string>
+                <key>purge_destination</key>
+                <true/>
+            </dict>
+        </dict>
+        <dict>
+            <key>Processor</key>
+            <string>PkgCopier</string>
+            <key>Arguments</key>
+            <dict>
+                <key>source_pkg</key>
+                <string>%pathname%/*.pkg</string>
+                <key>pkg_path</key>
+                <string>%pkgroot%/Scripts/%NAME%.pkg</string>
+            </dict>
+        </dict>
+        <dict>
+            <key>Processor</key>
+            <string>Copier</string>
+            <key>Arguments</key>
+            <dict>
+                <key>source_path</key>
+                <string>%pathname%/AnotherFolder/another.xml</string>
+                <key>destination_path</key>
+                <string>%pkgroot%/Scripts/AnotherFolder/another.xml</string>
+                <key>purge_destination</key>
+                <true/>
+            </dict>
+        </dict>
+        <dict>
+            <key>Processor</key>
+      	    <string>FileCreator</string>
+      	    <key>Arguments</key>
+      	    <dict>
+                <key>file_path</key>
+                <string>%pkgroot%/Scripts/postinstall</string>
+                <key>file_mode</key>
+                <string>0755</string>
+                <key>file_content</key>
+                <string>#!/bin/bash
+install_dir=`dirname $0`
+echo "install_dir is $install_dir"
+
+# get the console user
+console_uid="$(stat -f "%u" /dev/console)"
+console_user="$(id -un $console_uid)"
+echo $console_user
+
+# somefile.xml
+echo "moving somefile.xml file into place"
+mkdir -p /opt/cisco/anyconnect/profile
+cp $install_dir/somefile.xml /opt/cisco/anyconnect/profile/
+chown -R $console_user:staff /opt/cisco/anyconnect/profile/
+
+# install the AnyConnect Client
+echo "installing most recent AnyConnect Client"
+/usr/sbin/installer -dumplog -verbose -pkg "$install_dir/AnyConnect Client.pkg" -target "$3"
+
+exit 0
+                </string>
+            </dict>
+        </dict>
+        <dict>
+            <key>Processor</key>
+            <string>PkgCreator</string>
+            <key>Arguments</key>
+            <dict>
+                <key>pkg_request</key>
+                <dict>
+                    <key>pkgname</key>
+                    <string>%NAME%</string>
+                    <key>version</key>
+                    <string>%VERSION%</string>
+                    <key>id</key>
+                    <string>%BUNDLEID%</string>
+                    <key>options</key>
+                    <string>purge_ds_store</string>
+                    <key>scripts</key>
+                    <string>%pkgroot%/Scripts</string>
+                </dict>
+            </dict>
+        </dict>
+    </array>
+</dict>
+</plist>
